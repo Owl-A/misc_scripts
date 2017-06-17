@@ -1,5 +1,6 @@
 # Curve fitting
 
-### for 10 degree polynomial
+### for n degree polynomial
 
-### Currently not working :(
+for testing add a .points file in test,
+adjust globals in tester.py and execute fitter to test.

@@ -5,23 +5,33 @@ Created on Wed Jun 14 19:50:41 2017
 
 @author: chinmay
 """
-
 import numpy as np
+import matplotlib.pyplot as plt  
+import time
 
 num_features = 2
 Learning_rate = 10 ** -3
 correction = 0
 error_diff_threshold = 0
+sampling = 100
+st = 0
+e = 5
 
-def adjust_globals(features = 2, Learn_rate = 0.001, correction_factor = 0, error_diff = 0):
+def adjust_globals(features = 2, Learn_rate = 0.001, correction_factor = 0, error_diff = 0, plot_samples = 100, start = 0, end =5):
     global num_features
     global Learning_rate
     global correction 
     global error_diff_threshold
+    global sampling
+    global st
+    global e
     num_features = features
     Learning_rate = Learn_rate
     correction = correction_factor
     error_diff_threshold = error_diff
+    sampling = plot_samples
+    st = start 
+    e = end
 
 def get_points( infile ):
     '''
@@ -49,6 +59,7 @@ def get_points( infile ):
     
     for ctr in range(num_features):
         feat_vec.append(x_vec * feat_vec[ctr])
+    fptr.close()
     
     return (np.array(feat_vec), y_vec)
 
@@ -72,7 +83,7 @@ def Stepper(x_array, y_array,hypothesis,current_error):
     temp1 = np.subtract( np.dot(new_hypothesis, x_array), y_array)
     new_error = cost_function(temp1, new_hypothesis, y_array)
     
-    if current_error - new_error <= error_diff_threshold:
+    if current_error <= new_error or new_error <= error_diff_threshold:
         return False, hypothesis, current_error
     else:
         return True, new_hypothesis, new_error
@@ -95,9 +106,31 @@ def iterator( x_array, y_array):
     
     return hypothesis
 
-def fitter( infile ):
+def plotter(x, y, res):
+    inittime = time.time()
+    global sampling
+    global num_features
+    global st 
+    global e
+    X = np.linspace(st,e,sampling)
+    Y = res[0]
+    temp = X
+    for t in range(1,num_features + 1):
+        Y += res[t] * temp
+        temp = temp * X
+    plt.plot(X,Y)
+    plt.plot(x, y, 'ro')
+    plt.show()
+    print "extra time for ploting :"
+    print time.time() - inittime
+    
+def fitter( infile , plot = False ):
     try:
         x, y = get_points(infile)
-        print iterator(x, y)
+        res = iterator(x, y)
+        if plot :
+            plotter(x[1], y, res)
+        return res
     except:
         print "an unknown error occured, Check file type entered"
+    
