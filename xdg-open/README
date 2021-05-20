@@ -1,0 +1,4 @@
+README
+
+hacky xdg-open to be used with xalanq/cf-tools
+just go build and copy the xdg-open to /usr/bin
