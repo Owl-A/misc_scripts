@@ -4,6 +4,11 @@ import numpy as np
 import itertools as it
 import random
 
+MENTOR_YEAR_FULL = list(enumerate('1st BTech, 2nd BTech, 3rd BTech, 4th BTech, extension student, 5th DD, 1st MTech, 2nd MTech, 3rd MTech, PhD, Alumni'.split(', ')))
+
+MENTEE_YEAR_FULL = list(enumerate('1st BTech/BSc/DD, 2nd BTech/BSc/DD, 3rd BTech/BSc/DD, 4th BTech/BSc/DD, extension student, 5th DD, 1st MTech/MSc, 2nd MTech/MSc, 3rd MTech/MSc, PhD'.split(', ')))
+
+
 MENTOR_INTEREST_FULL = 'Cryptography, Web Exploitation, Reverse Engineering, Binary Exploitation (Pwning), Digital Forensics, OSINT, Game Hacking, Blockchain Hacking, Bug Bounty, Pentesting, Malware Analysis'.split(', ')
 
 MENTEE_INTEREST_FULL = 'Cryptography, Web Exploitation, Reverse Engineering, Binary Exploitation (Pwning), Digital Forensics, OSINT, Game Hacking, Blockchain, Bug Bounty, Pentesting, Malware Analysis'.split(', ')
@@ -17,24 +22,49 @@ def parse_interests(full, selected) :
         ctr += 1
     return mask
 
-def mentor_analysis(mentors) :
+def parse_years(full, selected) :
+    for i in full :
+        if i[1] in selected :
+            return i[0]
+    return len(full) 
+
+def mentor_analysis(mentors_data) :
     # strip off the unnecessary fields
+    mentors, mentors_year = mentors_data
     mentors = mentors[1:]
-    emails      = [i[1] for i in mentors]
-    names       = [i[2] for i in mentors]
+    emails      = [i[3].strip() for i in mentors]
+    names       = [i[2].strip() for i in mentors]
     interests   = list( map( lambda x: parse_interests(MENTOR_INTEREST_FULL, x[4]), mentors) )
     proficiency = list( map( lambda x: int(x[5]), mentors) )
 
-    return (emails, names, interests, proficiency)
+    years = []
+    for i in emails :
+        temp = []
+        for j in mentors_year :
+            if i == j[1].strip() or i == j[3].strip() :
+                temp += [j[6]]
+        if len(temp) > 1:
+            print(str(j) + " Probably filled the form twice." )
+        elif len(temp) == 0:
+            print(i + " Did not fill the form yet.")
+            # people who did'nt fill the form will be alloted 1st year BTech status
+            # and will be unable to take any mentees other than 1st year BTech
+            years += [0]
+            continue
+        years += [parse_years(MENTOR_YEAR_FULL, temp[0])]
+
+    return (emails, names, interests, proficiency, years)
 
 def mentee_analysis(mentees) :
     # strip off the unnecessary fields
     mentees = mentees[1:]
-    emails      = [i[1] for i in mentees]
-    names       = [i[2] for i in mentees]
+    mentees = list( filter( lambda x : len(x) > 0, mentees ) )
+    emails      = [i[1].strip() for i in mentees]
+    names       = [i[2].strip() for i in mentees]
     interests   = list( map( lambda x: parse_interests(MENTEE_INTEREST_FULL, x[8]), mentees) )
+    years       = list( map( lambda x: parse_years(MENTEE_YEAR_FULL, x[6]), mentees))
 
-    return (emails, names, interests)
+    return (emails, names, interests, years)
 
 # the cost with number of matching subjects
 dot_cost = np.exp(np.arange(12)/2.0)
@@ -52,35 +82,41 @@ def count_bits(x) :
     return t
 
 def eval_cost(x) :
-    tee, (tor, pro) = x
+    # remember more the cost, less chances of matching
+    (tee_int, tee_year) , (tor_int, pro, tor_year) = x
     U = int('1'*11, 2)
+    tor_int = int(tor_int)
 
     # 0 common very high cost, less common low cost, more chances of matching.
     # lot of matches considered superflous.
-    common    = dot_cost[count_bits(tee & tor)]
+    common    = dot_cost[count_bits(tee_int & tor_int)]
 
     # more the tee extra more the cost, less chances of matching.
     # giving the mentee something else to explore.
-    tee_extra = extra_cost[count_bits(tee & (~tor & U))]
+    tee_extra = extra_cost[count_bits(tee_int & (~tor_int & U))]
 
     # The more proficient the mentor the higher the cost,
     # lower the chances of getting that mentor.
     # More focussed the mentor on particular topics, the
     # lesser the chance of getting the mentor.
-    pro_cost  = np.exp(100*(pro/10.0)* (1.0/count_bits(tor)))
+    pro_cost  = np.exp(100*(pro/10.0)* (1.0/count_bits(tor_int)))
+
+    # Chances of matching a mentor in lower year than you
+    # should be negligible
+    year_cost = np.exp(500*(tee_year - tor_year))
 
     # random luck
     luck      = random.uniform(50.0, 275.0)
 
-    return common + tee_extra + pro_cost + luck
+    return np.log(common + tee_extra + pro_cost + year_cost + luck)
 
-def costs(multi, mentee_int, mentor_int, proficiency) :
+def costs(multi, mentee_int, mentee_year, mentor_int, proficiency, mentor_year) :
     # the matcher is a minimum cost matching algorithm
     # Make the costs higher to decrease the possibility of matching.
     
     # add dummy candidates with very high weight
     mentee_int.extend([0] * (multi - len(mentee_int)))
-    costs = list(it.product(mentee_int, list(zip(mentor_int, proficiency))))
+    costs = list(it.product(list(zip(mentee_int, mentee_year)), list(zip(mentor_int, proficiency, mentor_year))))
 
     costs = list(map( eval_cost, costs))
     return costs
