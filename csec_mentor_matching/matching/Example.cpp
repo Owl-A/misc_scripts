@@ -88,7 +88,6 @@ MinimumCostPerfectMatchingExample(PyObject *self, PyObject *args)
 	pair< list<int>, double > solution = M.SolveMinimumCostPerfectMatching(cost);
 
 	list<int> matching = solution.first;
-	double obj = solution.second;
 
 	PyObject *ret = PyList_New(mentees), *pitem;
 	for(list<int>::iterator it = matching.begin(); it != matching.end(); it++)

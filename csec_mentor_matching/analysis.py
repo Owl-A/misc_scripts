@@ -49,7 +49,7 @@ def mentor_analysis(mentors_data) :
         if len(temp) > 1:
             print(str(j) + " Probably filled the form twice." )
         elif len(temp) == 0:
-            print(i + " Did not fill the form yet.")
+            print( names[emails.index(i)]+ " <"+ i + "> Did not fill the form yet.")
             # people who did'nt fill the form will be alloted 1st year BTech status
             # and will be unable to take any mentees other than 1st year BTech
             years += [0]
@@ -125,3 +125,7 @@ def costs(multi, mentee_int, mentee_year, mentor_int, proficiency, mentor_year) 
     costs = list(map( eval_cost, costs))
     return costs
 
+def detect_duplicates(mentors, mentees) :
+    for pt in (set(mentors[0]) & set(mentees[0])) :
+        n = mentors[0].index(pt)
+        print( mentors[1][n] + " <" + pt + "> Filled both mentor and mentee forms.")

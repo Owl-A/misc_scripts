@@ -12,6 +12,7 @@ import matcher
 import pandas as pd
 import numpy as np
 from functools import reduce
+import sys
 
 MENTEE_SPREADSHEET = '1byO5GRxBVTaDVXNR_JeykVWwA9LrirKhmjjn_8TIUXk'
 MENTOR_SPREADSHEET = '1SMl0cjfrLgU6D2iYtiQwdl1O5kHTdGdyDqWdysdwTWg'
@@ -25,8 +26,14 @@ mentors_year = auth.get_sheet_data(service, MENTOR_YEAR_SPREADSHEET)
 mentees = auth.get_sheet_data(service, MENTEE_SPREADSHEET) 
 mentors = auth.get_sheet_data(service, MENTOR_SPREADSHEET) 
 
+print('+' * 80)
+
 mentors = analysis.mentor_analysis((mentors, mentors_year))
 mentees = analysis.mentee_analysis(mentees)
+
+print('+' * 80)
+
+analysis.detect_duplicates(mentors, mentees)
 
 #mentors = list(mentors)
 #mentors.append([np.zeros((len(mentors[0]),))])
@@ -57,6 +64,7 @@ mentees = analysis.mentee_analysis(mentees)
 #mentors = reduce(lambda x, y: [np.append(u[0], u[1]) for u in zip(x, y)], mentors_split, [[] for _ in mentors_split[0]])
 #mentors = list( map( list, mentors ) )
 
+print('+' * 80)
 
 # mentees should be a perfect multiple of mentor numbers
 # this is necessitated by the matching API
@@ -64,6 +72,7 @@ multi = (int(len(mentees[0]) / len(mentors[0])) + (1 if len(mentees[0]) % len(me
 costs = analysis.costs(multi, mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
 assignment = matcher.match(multi, len(mentors[0]), costs)
 
+print('+' * 80, file=sys.stderr)
 assignment = list( zip(assignment[:len(mentees[0])], list(range(len(mentees[0])))) )
 
 assignment = list(map( lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), assignment))
@@ -74,10 +83,14 @@ print("The Assertion that Mentor Year >= Mentee Year: " + ("Failed" if np.all(as
 assignment = assignment.sort_values(['Mentor Email', 'Mentor Name'])
 assignment.style.hide_index()
 
-c = input("Please Enter your choice to save to {} [y/n]".format(OUTPUT_FILE))
+print('+' * 80)
+prompt = "Please Enter your choice to save to {} [y/n] ".format(OUTPUT_FILE)
+print(prompt, end="")
+c = input()
 while(c[0] != 'y' and c[0] != 'n'):
     print("Unrecognized Choice!!!")
-    c = input("Please Enter your choice to save to {} [y/n]".format(OUTPUT_FILE))
+    print(prompt, end="")
+    c = input()
 
 if c[0] == 'y' :
     #assignment.to_excel(OUTPUT_FILE, sheet_name="mentee allotment", index=False)
