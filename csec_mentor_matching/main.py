@@ -29,17 +29,18 @@ mentors = analysis.mentor_analysis((mentors, mentors_year))
 mentees = analysis.mentee_analysis(mentees)
 
 mentors_temp = list( map( lambda x: np.asarray(x, dtype=type(x[0])), mentors ) )
+mentees = list( map( lambda x: np.asarray(x, dtype=type(x[0])), mentees ) )
 mentors_split = []
 mx = max(mentors[4])
-len_mentees = len(mentees[0])
 multi = 0
 for i in range(mx+1) :
     mask = (mentors_temp[4] == i)
     temp = mentors_temp[0][mask] 
     len_mentors = len(temp)
+    len_mentees = np.sum(np.asarray(mentees[3]) <= i)
     # len_mentees is obviously non-zeros because it's set of all mentees irrespective of year
     if len_mentors != 0 :
-        factor = (int(len_mentees / len_mentors) + (1 if len_mentees % len_mentors else 0))
+        factor = (int(len_mentees / len_mentors) + (1 if len_mentees % len_mentors else 0)) + 1
     else:
         factor = 1
     temp = [temp, mentors_temp[1][mask], mentors_temp[2][mask], mentors_temp[3][mask], mentors_temp[4][mask]]
@@ -52,11 +53,13 @@ for i in range(mx+1) :
 mentors = reduce(lambda x, y: [np.append(u[0], u[1]) for u in zip(x, y)], mentors_split, [[] for _ in mentors_split[0]])
 mentors = list( map( list, mentors ) )
 
+
 # mentees should be a perfect multiple of mentor numbers
 # this is necessitated by the matching API
+print("calculating costs!")
 costs = analysis.costs(multi, mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
+print("done calculating costs.")
 assignment = matcher.match(multi, len(mentors[0]), costs)
-#print(assignment)
 
 assignment = list( zip(assignment[:len(mentees[0])], list(range(len(mentees[0])))) )
 

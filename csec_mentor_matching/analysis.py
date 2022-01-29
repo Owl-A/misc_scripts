@@ -3,6 +3,9 @@
 import numpy as np
 import itertools as it
 import random
+import warnings
+
+warnings.filterwarnings('error')
 
 MENTOR_YEAR_FULL = list(enumerate('1st BTech, 2nd BTech, 3rd BTech, 4th BTech, extension student, 5th DD, 1st MTech, 2nd MTech, 3rd MTech, PhD, Alumni'.split(', ')))
 
@@ -103,7 +106,7 @@ def eval_cost(x) :
 
     # Chances of matching a mentor in lower year than you
     # should be negligible
-    year_cost = np.exp(500*(tee_year - tor_year))
+    year_cost = 1e+10 if tee_year > tor_year else 0
 
     # random luck
     luck      = random.uniform(50.0, 275.0)
@@ -115,7 +118,8 @@ def costs(multi, mentee_int, mentee_year, mentor_int, proficiency, mentor_year) 
     # Make the costs higher to decrease the possibility of matching.
     
     # add dummy candidates with very high weight
-    mentee_int.extend([0] * (multi - len(mentee_int)))
+    mentee_int = np.append(mentee_int, np.asarray([0] * (multi - len(mentee_int))))
+    mentee_year = np.append(mentee_year, np.asarray([len(MENTEE_YEAR_FULL)+1] * (multi - len(mentee_year))))
     costs = list(it.product(list(zip(mentee_int, mentee_year)), list(zip(mentor_int, proficiency, mentor_year))))
 
     costs = list(map( eval_cost, costs))
