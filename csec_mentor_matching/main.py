@@ -78,10 +78,19 @@ assignment = list( zip(assignment[:len(mentees[0])], list(range(len(mentees[0]))
 assignment = list(map( lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), assignment))
 assignment = pd.DataFrame(assignment)
 assignment.columns = ['Mentor Email', 'Mentor Name', 'Mentor Year', 'Mentee Email', 'Mentee Name', 'Mentee Year']
-print("The Assertion that Mentor Year >= Mentee Year: " + ("Failed" if np.all(assignment['Mentor Year'] >= assignment['Mentee Year'] ) else "Passed"))
+print("The assertion that Mentor Year >= Mentee Year: " + ("Failed" if np.all(assignment['Mentor Year'] >= assignment['Mentee Year'] ) else "Passed"))
 
 assignment = assignment.sort_values(['Mentor Email', 'Mentor Name'])
 assignment.style.hide_index()
+
+print('+' * 80)
+assert len(set(assignment['Mentor Email'])) == len(mentors[0]) , "Not all mentors have been alotted mentees!"
+print("The assertion that all mentors have at least one mentee: Passed")
+
+print('+' * 80)
+temp = np.asarray(assignment.groupby(['Mentor Email', 'Mentor Name']).size())
+assert (temp >= 3).all() , "Of all mentors, not all have been alotted >= 3 mentees!"
+print("The assertion that all mentors have at least >= 3 mentees: Passed")
 
 print('+' * 80)
 prompt = "Please Enter your choice to save to {} [y/n] ".format(OUTPUT_FILE)

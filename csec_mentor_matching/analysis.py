@@ -35,10 +35,14 @@ def mentor_analysis(mentors_data) :
     # strip off the unnecessary fields
     mentors, mentors_year = mentors_data
     mentors = mentors[1:]
+
     emails      = [i[3].strip() for i in mentors]
-    names       = [i[2].strip() for i in mentors]
-    interests   = list( map( lambda x: parse_interests(MENTOR_INTEREST_FULL, x[4]), mentors) )
-    proficiency = list( map( lambda x: int(x[5]), mentors) )
+    mask        = [ emails.index(x[1]) == x[0] for x in enumerate(emails)]
+    emails      = list( np.asarray(emails)[mask] )
+
+    names       = list( np.asarray([i[2].strip() for i in mentors])[mask] )
+    interests   = list( np.asarray(list( map( lambda x: parse_interests(MENTOR_INTEREST_FULL, x[4]), mentors) ) )[mask] )
+    proficiency = list( np.asarray(list( map( lambda x: int(x[5]), mentors) ))[mask] )
 
     years = []
     for i in emails :
@@ -70,11 +74,11 @@ def mentee_analysis(mentees) :
     return (emails, names, interests, years)
 
 # the cost with number of matching subjects
-dot_cost = np.exp(np.arange(12)/2.0)
+dot_cost = np.exp(np.arange(12)/3.0)
 dot_cost[0] += 1e+20
 
 # cost with number of extra subjects that dont match with mentor
-extra_cost = np.exp(np.arange(12)/2.0)
+extra_cost = np.exp(np.arange(12)/3.0)
 
 
 def count_bits(x) :
@@ -102,7 +106,7 @@ def eval_cost(x) :
     # lower the chances of getting that mentor.
     # More focussed the mentor on particular topics, the
     # lesser the chance of getting the mentor.
-    pro_cost  = np.exp(100*(pro/10.0)* (1.0/count_bits(tor_int)))
+    pro_cost  = np.exp(pro* (0.40/count_bits(tor_int)))
 
     # Chances of matching a mentor in lower year than you
     # should be negligible
