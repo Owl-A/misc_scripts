@@ -4,6 +4,7 @@ import numpy as np
 import itertools as it
 import random
 import warnings
+import z3
 
 warnings.filterwarnings('error')
 
@@ -133,3 +134,26 @@ def detect_duplicates(mentors, mentees) :
     for pt in (set(mentors[0]) & set(mentees[0])) :
         n = mentors[0].index(pt)
         print( mentors[1][n] + " <" + pt + "> Filled both mentor and mentee forms.")
+
+# to encode matching as SAT; every mentee-mentor pair will have a cost and a boolean var to denote whether they are picked or not
+# min cost matching = optimise cost of chosen pairs + choose only one edge per mentee
+# other constraints to be added separately
+
+# vars have mentor as first index and mentee as second
+def mentor_count_constraint(tee_tor_vars, costs, min_cnt):
+    l = []
+    for i in range(len(tee_tor_vars)):
+        l.append(z3.AtLeast(tee_tor_vars[i], min_cnt))
+    return z3.And(l)
+
+def matching(optimiser, tee_tor_vars, costs):
+    for j in range(len(tee_tor_vars[0])):
+        optimiser.add(z3.PbEq([(tee_tor_vars[i][j],1) for i in range(len(tee_tor_vars))], 1))
+    
+    v = 0
+    for i in range(len(tee_tor_vars)):
+        for j in range(len(tee_tor_vars[0])):
+            v += If(tee_tor_vars[i][j], costs[i][j], 0)
+    optimiser.minimize(v)
+
+    return optimiser.check()
