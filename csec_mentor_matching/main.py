@@ -15,6 +15,11 @@ from functools import reduce
 import sys
 import z3
 
+z3.set_param('parallel.enable', True)
+z3.set_param('parallel.threads.max', 32)
+z3.set_param('sat.local_search_threads', 4)
+z3.set_param('sat.threads', 4)
+
 MENTEE_SPREADSHEET = '1byO5GRxBVTaDVXNR_JeykVWwA9LrirKhmjjn_8TIUXk'
 MENTOR_SPREADSHEET = '1SMl0cjfrLgU6D2iYtiQwdl1O5kHTdGdyDqWdysdwTWg'
 MENTOR_YEAR_SPREADSHEET = '15sDdZuQmdCkCgJEI2tXgRahDH2s0_GfXaG4kVIz9gsU'
@@ -39,17 +44,19 @@ analysis.detect_duplicates(mentors, mentees)
 
 print('+' * 80)
 
-osts = analysis.costs(len(mentees[0]), mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
+costs = analysis.costs(mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
 
 opt = z3.Optimize()
 
-tee_tor_vars = [[Bool(f'var_{i}_{j}') for j in range(len(mentees[0]))] for i in range(len(mentors[0]))]
+tee_tor_vars = [[z3.Bool(f'var_{i}_{j}') for j in range(len(mentees[0]))] for i in range(len(mentors[0]))]
 
-opt.add(analysis.mentor_count_constraint(tee_tor_vars, costs, 3))
+opt.add(z3.simplify(analysis.mentor_count_constraint(tee_tor_vars, costs, 3)))
+
+print('+' * 80)
 
 res = analysis.matching(opt, tee_tor_vars, costs)
 
-assert res == sat
+assert res == z3.sat
 
 m = opt.model()
 

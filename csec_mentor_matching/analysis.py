@@ -75,8 +75,7 @@ def mentee_analysis(mentees) :
     return (emails, names, interests, years)
 
 # the cost with number of matching subjects
-dot_cost = np.exp(np.arange(12)/3.0)
-dot_cost[0] += 1e+20
+dot_cost = np.exp(np.arange(12)/3.0)[::-1]
 
 # cost with number of extra subjects that dont match with mentor
 extra_cost = np.exp(np.arange(12)/3.0)
@@ -96,7 +95,6 @@ def eval_cost(x) :
     tor_int = int(tor_int)
 
     # 0 common very high cost, less common low cost, more chances of matching.
-    # lot of matches considered superflous.
     common    = dot_cost[count_bits(tee_int & tor_int)]
 
     # more the tee extra more the cost, less chances of matching.
@@ -107,28 +105,32 @@ def eval_cost(x) :
     # lower the chances of getting that mentor.
     # More focussed the mentor on particular topics, the
     # lesser the chance of getting the mentor.
-    pro_cost  = np.exp(pro* (0.40/count_bits(tor_int)))
+    pro_cost  = np.exp((1/pro) * (1/count_bits(tor_int)))
 
     # Chances of matching a mentor in lower year than you
     # should be negligible
-    year_cost = 1e+10 if tee_year > tor_year else 0
+    year_cost = 100 if tee_year > tor_year else (20 if tee_year == tor_year else 0)
 
     # random luck
-    luck      = random.uniform(50.0, 275.0)
+    luck      = random.uniform(2.0, 10.0)
 
     return np.log(common + tee_extra + pro_cost + year_cost + luck)
 
-def costs(multi, mentee_int, mentee_year, mentor_int, proficiency, mentor_year) :
+def costs(mentee_int, mentee_year, mentor_int, proficiency, mentor_year) :
     # the matcher is a minimum cost matching algorithm
     # Make the costs higher to decrease the possibility of matching.
     
     # add dummy candidates with very high weight
-    mentee_int = np.append(mentee_int, np.asarray([0] * (multi - len(mentee_int))))
-    mentee_year = np.append(mentee_year, np.asarray([len(MENTEE_YEAR_FULL)+1] * (multi - len(mentee_year))))
+    # multi is number of mentees
+#    mentee_int = np.append(mentee_int, np.asarray([0] * (multi - len(mentee_int))))
+#    mentee_year = np.append(mentee_year, np.asarray([len(MENTEE_YEAR_FULL)+1] * (multi - len(mentee_year))))
     costs = list(it.product(list(zip(mentee_int, mentee_year)), list(zip(mentor_int, proficiency, mentor_year))))
 
     costs = list(map( eval_cost, costs))
-    return costs
+    mat = []
+    for i in range(len(mentor_int)):
+        mat.append(list(map(lambda x : int(x), costs[i::len(mentor_int)])))
+    return mat
 
 def detect_duplicates(mentors, mentees) :
     for pt in (set(mentors[0]) & set(mentees[0])) :
@@ -143,17 +145,19 @@ def detect_duplicates(mentors, mentees) :
 def mentor_count_constraint(tee_tor_vars, costs, min_cnt):
     l = []
     for i in range(len(tee_tor_vars)):
-        l.append(z3.AtLeast(tee_tor_vars[i], min_cnt))
+        l.append(z3.AtLeast(*tee_tor_vars[i], min_cnt))
     return z3.And(l)
 
 def matching(optimiser, tee_tor_vars, costs):
     for j in range(len(tee_tor_vars[0])):
-        optimiser.add(z3.PbEq([(tee_tor_vars[i][j],1) for i in range(len(tee_tor_vars))], 1))
+        optimiser.add(z3.simplify(z3.PbEq([(tee_tor_vars[i][j],1) for i in range(len(tee_tor_vars))], 1)))
     
     v = 0
     for i in range(len(tee_tor_vars)):
         for j in range(len(tee_tor_vars[0])):
-            v += If(tee_tor_vars[i][j], costs[i][j], 0)
-    optimiser.minimize(v)
+            optimiser.add_soft(tee_tor_vars[i][j], costs[i][j])
+#    optimiser.minimize(v)
+
+    print(optimiser)
 
     return optimiser.check()
