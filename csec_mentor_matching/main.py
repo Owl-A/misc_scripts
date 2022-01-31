@@ -35,6 +35,11 @@ print('+' * 80)
 
 analysis.detect_duplicates(mentors, mentees)
 
+LOW_CAP = 3
+HIGH_CAP = analysis.set_caps(len(mentees[0]), len(mentors[0]), LOW_CAP)
+
+multi, mentee_s, mentor_s = analysis.get_optimal_dummies(len(mentees[0]), len(mentors[0]))
+
 #mentors = list(mentors)
 #mentors.append([np.zeros((len(mentors[0]),))])
 #mentors = tuple(mentors)
@@ -68,20 +73,41 @@ print('+' * 80)
 
 # mentees should be a perfect multiple of mentor numbers
 # this is necessitated by the matching API
-multi = (int(len(mentees[0]) / len(mentors[0])) + (1 if len(mentees[0]) % len(mentors[0]) else 0)) * len(mentors[0])
-costs = analysis.costs(multi, mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
-assignment = matcher.match(multi, len(mentors[0]), costs)
+multi, costs = analysis.costs(multi, mentee_s, mentor_s,  mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
+assignment = matcher.match(multi, multi, costs)
 
 print('+' * 80, file=sys.stderr)
-assignment = list( zip(assignment[:len(mentees[0])], list(range(len(mentees[0])))) )
+assignment = list( zip(assignment, list(range(len(assignment)))) )
 
-assignment = list(map( lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), assignment))
+len_full_mentee = len(mentees[0]) + mentee_s
+len_full_mentor = len(mentors[0]) + mentor_s
+
+assignment = list(map(lambda x : (x[1] % len_full_mentee, x[0] % len_full_mentor, \
+                                 costs[x[1] * len_full_mentor + x[0]]) \
+                                 if (x[0] % len_full_mentor < len(mentors[0])) \
+                                 and (x[1] % len_full_mentee < len(mentees[0])) \
+                                 else None, assignment))
+assignment = list(filter(lambda x : x, assignment))
+
+# narrow the possible candidates to final one-to-many matching!
+
+
+# finally to human readable format!
+assignment = list(map( lambda x : (mentors[0][x[1]], mentors[1][x[1]], mentors[4][x[1]], \
+                                   mentees[0][x[0]], mentees[1][x[0]], mentees[3][x[0]]), \
+                                   assignment))
+
 assignment = pd.DataFrame(assignment)
-assignment.columns = ['Mentor Email', 'Mentor Name', 'Mentor Year', 'Mentee Email', 'Mentee Name', 'Mentee Year']
-print("The assertion that Mentor Year >= Mentee Year: " + ("Failed" if np.all(assignment['Mentor Year'] >= assignment['Mentee Year'] ) else "Passed"))
 
-assignment = assignment.sort_values(['Mentor Email', 'Mentor Name'])
-assignment.style.hide_index()
+assignment.columns = ['Mentor Email', 'Mentor Name', 'Mentor Year', 'Mentee Email', 'Mentee Name', 'Mentee Year']
+print(assignment)
+
+
+# some checks before saving!
+print('+' * 80)
+print(set(mentees[0]) - set(assignment['Mentee Email']))
+assert len(set(assignment['Mentee Email'])) == len(mentees[0]) , "Not all mentees have been alotted mentors!"
+print("The assertion that all mentors have at least one mentee: Passed")
 
 print('+' * 80)
 assert len(set(assignment['Mentor Email'])) == len(mentors[0]) , "Not all mentors have been alotted mentees!"
@@ -91,6 +117,13 @@ print('+' * 80)
 temp = np.asarray(assignment.groupby(['Mentor Email', 'Mentor Name']).size())
 assert (temp >= 3).all() , "Of all mentors, not all have been alotted >= 3 mentees!"
 print("The assertion that all mentors have at least >= 3 mentees: Passed")
+
+print("The assertion that Mentor Year >= Mentee Year: " + ("Failed" if np.all(assignment['Mentor Year'] >= assignment['Mentee Year'] ) else "Passed"))
+
+assignment = assignment.sort_values(['Mentor Email', 'Mentor Name'])
+assignment.style.hide_index()
+
+exit(42)
 
 print('+' * 80)
 prompt = "Please Enter your choice to save to {} [y/n] ".format(OUTPUT_FILE)
