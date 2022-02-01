@@ -37,9 +37,12 @@ print('+' * 80)
 mentors = analysis.mentor_analysis((mentors, mentors_year))
 mentees = analysis.mentee_analysis(mentees)
 
+mentees_og = mentees
 print('+' * 80)
 
 analysis.detect_duplicates(mentors, mentees)
+
+analysis.visualise_interests(mentees)
 
 mentee_set1, mentee_set2 = analysis.arrange_mentees(mentees, len(mentors[0]))
 
@@ -80,9 +83,9 @@ mentees = mentee_set1
 multi = len(mentees[0]) 
 costs = analysis.costs(multi, mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
 temp = matcher.match(multi, len(mentors[0]), costs)
-temp = list( zip(temp[:len(mentees[0])], list(range(len(mentees[0])))) )
+temp1 = list( zip(temp[:len(mentees[0])], list(range(len(mentees[0])))) )
 
-assignment = list(map( lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), temp))
+assignment = list(map( lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), temp1))
 
 print('+' * 80)
 
@@ -90,12 +93,17 @@ mentees = mentee_set2
 multi = len(mentors[0])
 costs = analysis.costs(multi, mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
 temp = matcher.match(multi, len(mentors[0]), costs)
-temp = list( zip(temp[:len(mentees[0])], list(range(len(mentees[0])))) )
+temp2 = list( zip(temp[:len(mentees[0])], list(range(len(mentees[0])))) )
 
-assignment += list(map(lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), temp))
+assignment += list(map(lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), temp2))
 assignment = pd.DataFrame(assignment)
 
-print('+' * 80, file=sys.stderr)
+mapping = temp1 + temp2
+mapping.sort()
+
+analysis.visualize_mapping(mapping, mentors, mentees_og)
+
+print('+' * 80)
 assignment.columns = ['Mentor Email', 'Mentor Name', 'Mentor Year', 'Mentee Email', 'Mentee Name', 'Mentee Year']
 print("The assertion that Mentor Year >= Mentee Year: " + ("Failed" if np.all(assignment['Mentor Year'] >= assignment['Mentee Year'] ) else "Passed"))
 

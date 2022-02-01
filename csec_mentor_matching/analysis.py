@@ -5,6 +5,7 @@ import itertools as it
 import random
 import warnings
 import z3
+import matplotlib.pyplot as plt
 
 #warnings.filterwarnings('error')
 
@@ -150,6 +151,7 @@ dot_cost = np.exp(np.arange(12)/3.0)[::-1]
 # cost with number of extra subjects that dont match with mentor
 extra_cost = np.exp(np.arange(12)/3.0)
 
+U = int('1'*11, 2)
 
 def count_bits(x) :
     t = 0
@@ -162,7 +164,6 @@ def eval_cost(x) :
     # remember more the cost, less chances of matching
     (tee_int, tee_year) , (tor_int, pro, tor_year) = x
 
-    U = int('1'*11, 2)
     tor_int = int(tor_int)
     tee_int = int(tee_int)
 
@@ -181,11 +182,11 @@ def eval_cost(x) :
     # lower the chances of getting that mentor.
     # More focussed the mentor on particular topics, the
     # lesser the chance of getting the mentor.
-    pro_cost  = np.exp((1/pro) * (1/count_bits(tor_int)))
+    pro_cost  = np.exp(10 * (1/pro) * (1/count_bits(tor_int)))
 
     # Chances of matching a mentor in lower year than you
     # should be negligible
-    year_cost = 100 if tee_year > tor_year else (20 if tee_year == tor_year else 0)
+    year_cost = 100 if tee_year > tor_year else (10 if tee_year == tor_year else 0)
 
     # random luck
     luck      = random.uniform(2.0, 10.0)
@@ -203,21 +204,16 @@ def eval_cost(x) :
 
     return np.log(common + tee_extra + pro_cost + year_cost + luck)
 
-def costs(mentee_int, mentee_year, mentor_int, proficiency, mentor_year) :
+def costs(multi, mentee_int, mentee_year, mentor_int, proficiency, mentor_year) :
     # the matcher is a minimum cost matching algorithm
     # Make the costs higher to decrease the possibility of matching.
-    
-    # add dummy candidates with very high weight
     # multi is number of mentees
-#    mentee_int = np.append(mentee_int, np.asarray([0] * (multi - len(mentee_int))))
-#    mentee_year = np.append(mentee_year, np.asarray([len(MENTEE_YEAR_FULL)+1] * (multi - len(mentee_year))))
+    mentee_int = np.append(mentee_int, np.asarray([0] * (multi - len(mentee_int))))
+    mentee_year = np.append(mentee_year, np.asarray([len(MENTEE_YEAR_FULL)+1] * (multi - len(mentee_year))))
     costs = list(it.product(list(zip(mentee_int, mentee_year)), list(zip(mentor_int, proficiency, mentor_year))))
 
     costs = list(map( eval_cost, costs))
-    mat = []
-    for i in range(len(mentor_int)):
-        mat.append(list(map(lambda x : int(x), costs[i::len(mentor_int)])))
-    return mat
+    return costs
 
 def detect_duplicates(mentors, mentees) :
     for pt in (set(mentors[0]) & set(mentees[0])) :
@@ -245,6 +241,43 @@ def matching(optimiser, tee_tor_vars, costs):
             optimiser.add_soft(tee_tor_vars[i][j], costs[i][j])
 #    optimiser.minimize(v)
 
-    print(optimiser)
+#    print(optimiser)
 
     return optimiser.check()
+
+def visualise_interests(mentees):
+    interests = mentees[2]
+    BLK = 20 
+    img = np.zeros((len(MENTEE_INTEREST_FULL)*BLK, BLK*len(interests), 3), dtype=np.float)
+
+    for i, v in enumerate(interests):
+        mask = v
+        for j, val in enumerate(bin(mask)[2:].zfill(len(MENTEE_INTEREST_FULL))):
+            img[j*BLK:(j+1)*BLK, i*BLK:(i+1)*BLK, :] = int(val)
+
+#    print(img)
+    plt.imsave('mentee_interests.png', img)
+
+
+def visualize_mapping(mapping, mentors, mentees):
+    BLK = 20
+    img = np.zeros((BLK*7, BLK*len(mentors[0]), 3), dtype=np.uint8)
+    cnts = np.zeros((len(mentors[0])), dtype=np.int)
+    for tor, tee in mapping:
+        tor_int = mentors[2][tor]
+        tee_int = mentees[2][tee]
+        val = [[[0, 255, 0]]] # green is default
+
+        if count_bits(tee_int & (~(tor_int & tee_int) & U)) > 2:
+            # set difference of tee_int with tor_int more than, say, 2
+            val = [[[255, 0, 0]]] # red
+        elif count_bits(tor_int & (~(tor_int & tee_int) & U)) > 2:
+            # set difference of tor_int with tee_int
+            val = [[[0, 0, 255]]] # blue
+
+        img[cnts[tor]*BLK:(cnts[tor]+1)*BLK, tor*BLK:(tor+1)*BLK, :] = val
+        cnts[tor] += 1
+
+#    print(img)
+
+    plt.imsave('mapping.png', img)
