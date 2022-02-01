@@ -268,12 +268,13 @@ def visualize_mapping(mapping, mentors, mentees):
         tee_int = mentees[2][tee]
         val = [[[0, 255, 0]]] # green is default
 
-        if count_bits(tee_int & (~(tor_int & tee_int) & U)) > 2:
+        if count_bits(tor_int & tee_int) <= 3:
+        # if count_bits(tee_int & (~(tor_int & tee_int) & U)) > 2:
             # set difference of tee_int with tor_int more than, say, 2
             val = [[[255, 0, 0]]] # red
-        elif count_bits(tor_int & (~(tor_int & tee_int) & U)) > 2:
+        # elif count_bits(tor_int & (~(tor_int & tee_int) & U)) > 2:
             # set difference of tor_int with tee_int
-            val = [[[0, 0, 255]]] # blue
+            #val = [[[0, 0, 255]]] # blue
 
         img[cnts[tor]*BLK:(cnts[tor]+1)*BLK, tor*BLK:(tor+1)*BLK, :] = val
         cnts[tor] += 1
