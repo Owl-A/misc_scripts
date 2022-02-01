@@ -37,7 +37,6 @@ analysis.detect_duplicates(mentors, mentees)
 
 mentee_set1, mentee_set2 = analysis.arrange_mentees(mentees, len(mentors[0]))
 
-
 #mentors = list(mentors)
 #mentors.append([np.zeros((len(mentors[0]),))])
 #mentors = tuple(mentors)
@@ -92,14 +91,10 @@ assignment = pd.DataFrame(assignment)
 
 print('+' * 80, file=sys.stderr)
 assignment.columns = ['Mentor Email', 'Mentor Name', 'Mentor Year', 'Mentee Email', 'Mentee Name', 'Mentee Year']
-print(assignment)
+print("The assertion that Mentor Year >= Mentee Year: " + ("Failed" if np.all(assignment['Mentor Year'] >= assignment['Mentee Year'] ) else "Passed"))
 
-
-# some checks before saving!
-print('+' * 80)
-print(set(mentees[0]) - set(assignment['Mentee Email']))
-assert len(set(assignment['Mentee Email'])) == len(mentees[0]) , "Not all mentees have been alotted mentors!"
-print("The assertion that all mentors have at least one mentee: Passed")
+assignment = assignment.sort_values(['Mentor Email', 'Mentor Name'])
+assignment.style.hide_index()
 
 print('+' * 80)
 assert len(set(assignment['Mentor Email'])) == len(mentors[0]) , "Not all mentors have been alotted mentees!"
@@ -109,13 +104,6 @@ print('+' * 80)
 temp = np.asarray(assignment.groupby(['Mentor Email', 'Mentor Name']).size())
 assert (temp >= 3).all() , "Of all mentors, not all have been alotted >= 3 mentees!"
 print("The assertion that all mentors have at least >= 3 mentees: Passed")
-
-print("The assertion that Mentor Year >= Mentee Year: " + ("Failed" if np.all(assignment['Mentor Year'] >= assignment['Mentee Year'] ) else "Passed"))
-
-assignment = assignment.sort_values(['Mentor Email', 'Mentor Name'])
-assignment.style.hide_index()
-
-exit(42)
 
 print('+' * 80)
 prompt = "Please Enter your choice to save to {} [y/n] ".format(OUTPUT_FILE)

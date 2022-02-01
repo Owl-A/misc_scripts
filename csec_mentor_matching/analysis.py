@@ -171,21 +171,16 @@ def eval_cost(x) :
 
     # 0 common very high cost, less common low cost, more chances of matching.
     # lot of matches considered superflous.
-    x = count_bits(tee_int & tor_int)
-    common    = dot_cost[x]
+    common    = dot_cost[count_bits(tee_int & tor_int)]
 
     # more the tee extra more the cost, less chances of matching.
     # giving the mentee something else to explore.
-    if tee_spoof < 0 :
-        tee_extra = extra_cost[count_bits(U)]
-    else:
-        tee_extra = extra_cost[count_bits(tee_int & (~tor_int & U))]
+    tee_extra = extra_cost[count_bits(tee_int & (~tor_int & U))]
 
     # The more proficient the mentor the higher the cost,
     # lower the chances of getting that mentor.
     # More focussed the mentor on particular topics, the
     # lesser the chance of getting the mentor.
-
     pro_cost  = np.exp(pro* (0.5/count_bits(tor_int)))
 
     # Chances of matching a mentor in lower year than you
@@ -208,28 +203,17 @@ def eval_cost(x) :
 
     return np.log(common + tee_extra + pro_cost + year_cost + luck)
 
-def costs(multi, mentee_s, mentor_s, mentee_int, mentee_year, mentor_int, proficiency, mentor_year) :
+def costs(multi, mentee_int, mentee_year, mentor_int, proficiency, mentor_year) :
     # the matcher is a minimum cost matching algorithm
     # Make the costs higher to decrease the possibility of matching.
     
     # add dummy candidates with very high weight
-    times_mentee = int(multi / ( mentee_s + len(mentee_int))) * multiples
-
-    mentee_spoof = (([0] * len(mentee_int)) +  [-1] * (mentee_s)) * times_mentee
-    mentee_int   = (mentee_int  +  [0] * (mentee_s)) * times_mentee
-    mentee_year  = (mentee_year +  [len(MENTOR_YEAR_FULL) + 1] * (mentee_s)) * times_mentee
-
-    times_mentor = int(multi / ( mentor_s + len(mentor_int))) * multiples
-
-    mentor_int  = (mentor_int  + ([0]  * (mentor_s))) * times_mentor 
-    mentor_year = (mentor_year + ([-1] * (mentor_s))) * times_mentor
-    proficiency = (proficiency + ([-1] * (mentor_s))) * times_mentor
-    print("length of mentor after extension : " + str(len(mentor_int)))
-
-    costs = list(it.product(list(zip(mentee_int, mentee_year, mentee_spoof)), list(zip(mentor_int, proficiency, mentor_year))))
+    mentee_int = np.append(mentee_int, np.asarray([0] * (multi - len(mentee_int))))
+    mentee_year = np.append(mentee_year, np.asarray([len(MENTEE_YEAR_FULL)+1] * (multi - len(mentee_year))))
+    costs = list(it.product(list(zip(mentee_int, mentee_year)), list(zip(mentor_int, proficiency, mentor_year))))
 
     costs = list(map( eval_cost, costs))
-    return (multi* multiples), costs
+    return costs
 
 def detect_duplicates(mentors, mentees) :
     for pt in (set(mentors[0]) & set(mentees[0])) :
