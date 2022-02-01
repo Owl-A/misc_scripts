@@ -35,6 +35,8 @@ print('+' * 80)
 
 analysis.detect_duplicates(mentors, mentees)
 
+mentee_set1, mentee_set2 = analysis.arrange_mentees(mentees, len(mentors[0]))
+
 #mentors = list(mentors)
 #mentors.append([np.zeros((len(mentors[0]),))])
 #mentors = tuple(mentors)
@@ -68,15 +70,26 @@ print('+' * 80)
 
 # mentees should be a perfect multiple of mentor numbers
 # this is necessitated by the matching API
-multi = (int(len(mentees[0]) / len(mentors[0])) + (1 if len(mentees[0]) % len(mentors[0]) else 0)) * len(mentors[0])
+mentees = mentee_set1
+multi = len(mentees[0]) 
 costs = analysis.costs(multi, mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
-assignment = matcher.match(multi, len(mentors[0]), costs)
+temp = matcher.match(multi, len(mentors[0]), costs)
+temp = list( zip(temp[:len(mentees[0])], list(range(len(mentees[0])))) )
+
+assignment = list(map( lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), temp))
+
+print('+' * 80)
+
+mentees = mentee_set2
+multi = len(mentors[0])
+costs = analysis.costs(multi, mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
+temp = matcher.match(multi, len(mentors[0]), costs)
+temp = list( zip(temp[:len(mentees[0])], list(range(len(mentees[0])))) )
+
+assignment += list(map(lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), temp))
+assignment = pd.DataFrame(assignment)
 
 print('+' * 80, file=sys.stderr)
-assignment = list( zip(assignment[:len(mentees[0])], list(range(len(mentees[0])))) )
-
-assignment = list(map( lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), assignment))
-assignment = pd.DataFrame(assignment)
 assignment.columns = ['Mentor Email', 'Mentor Name', 'Mentor Year', 'Mentee Email', 'Mentee Name', 'Mentee Year']
 print("The assertion that Mentor Year >= Mentee Year: " + ("Failed" if np.all(assignment['Mentor Year'] >= assignment['Mentee Year'] ) else "Passed"))
 

@@ -37,7 +37,7 @@ static pair< Graph, vector<double> > *ReadWeightedGraph(int mentees, int mentors
 	      return NULL;
 	    }
 	    double c = PyFloat_AsDouble(pitem);
-	    cerr << "Cost: " << c << ", Mentee: "<< i << ", Mentor: "<< j << endl;
+	    //cerr << "Cost: " << c << ", Mentee: "<< i << ", Mentor: "<< j << endl;
 	    for(int k = 0; k < multi; k += mentors){
 	      G.AddEdge(i, mentees + j + k);
               cost[G.GetEdgeIndex(i, mentees + j + k)] = c;
