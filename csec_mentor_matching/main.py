@@ -13,6 +13,12 @@ import pandas as pd
 import numpy as np
 from functools import reduce
 import sys
+import z3
+
+z3.set_param('parallel.enable', True)
+z3.set_param('parallel.threads.max', 32)
+z3.set_param('sat.local_search_threads', 4)
+z3.set_param('sat.threads', 4)
 
 MENTEE_SPREADSHEET = '1byO5GRxBVTaDVXNR_JeykVWwA9LrirKhmjjn_8TIUXk'
 MENTOR_SPREADSHEET = '1SMl0cjfrLgU6D2iYtiQwdl1O5kHTdGdyDqWdysdwTWg'
@@ -31,9 +37,12 @@ print('+' * 80)
 mentors = analysis.mentor_analysis((mentors, mentors_year))
 mentees = analysis.mentee_analysis(mentees)
 
+mentees_og = mentees
 print('+' * 80)
 
 analysis.detect_duplicates(mentors, mentees)
+
+analysis.visualise_interests(mentees)
 
 mentee_set1, mentee_set2 = analysis.arrange_mentees(mentees, len(mentors[0]))
 
@@ -74,9 +83,9 @@ mentees = mentee_set1
 multi = len(mentees[0]) 
 costs = analysis.costs(multi, mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
 temp = matcher.match(multi, len(mentors[0]), costs)
-temp = list( zip(temp[:len(mentees[0])], list(range(len(mentees[0])))) )
+temp1 = list( zip(temp[:len(mentees[0])], list(range(len(mentees[0])))) )
 
-assignment = list(map( lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), temp))
+assignment = list(map( lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), temp1))
 
 print('+' * 80)
 
@@ -84,12 +93,17 @@ mentees = mentee_set2
 multi = len(mentors[0])
 costs = analysis.costs(multi, mentees[2], mentees[3], mentors[2], mentors[3], mentors[4])
 temp = matcher.match(multi, len(mentors[0]), costs)
-temp = list( zip(temp[:len(mentees[0])], list(range(len(mentees[0])))) )
+temp2 = list( zip(temp[:len(mentees[0])], list(range(len(mentees[0])))) )
 
-assignment += list(map(lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), temp))
+assignment += list(map(lambda x : (mentors[0][x[0]], mentors[1][x[0]], mentors[4][x[0]], mentees[0][x[1]], mentees[1][x[1]], mentees[3][x[1]]), temp2))
 assignment = pd.DataFrame(assignment)
 
-print('+' * 80, file=sys.stderr)
+mapping = temp1 + temp2
+mapping.sort()
+
+analysis.visualize_mapping(mapping, mentors, mentees_og)
+
+print('+' * 80)
 assignment.columns = ['Mentor Email', 'Mentor Name', 'Mentor Year', 'Mentee Email', 'Mentee Name', 'Mentee Year']
 print("The assertion that Mentor Year >= Mentee Year: " + ("Failed" if np.all(assignment['Mentor Year'] >= assignment['Mentee Year'] ) else "Passed"))
 
