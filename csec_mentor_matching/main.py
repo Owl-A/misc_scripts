@@ -8,15 +8,12 @@ from __future__ import print_function
 import auth
 import analysis
 import matcher
+from data import *
 
 import pandas as pd
 import numpy as np
 from functools import reduce
 import sys
-
-MENTEE_SPREADSHEET = '1byO5GRxBVTaDVXNR_JeykVWwA9LrirKhmjjn_8TIUXk'
-MENTOR_SPREADSHEET = '1SMl0cjfrLgU6D2iYtiQwdl1O5kHTdGdyDqWdysdwTWg'
-MENTOR_YEAR_SPREADSHEET = '15sDdZuQmdCkCgJEI2tXgRahDH2s0_GfXaG4kVIz9gsU'
 
 OUTPUT_FILE = "./matching.xlsx"
 

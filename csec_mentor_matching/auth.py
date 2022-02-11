@@ -29,10 +29,11 @@ def get_service(credential_file):
     return service
 
 
-def get_sheet_data(service, spreadsheet_ID) :
+def get_sheet_data(service, spreadsheet_ID, sheet_name=None):
     sheet = service.spreadsheets()
+    RANGE = sheet_name if sheet_name else RANGE_NAME
     result_input = sheet.values().get(spreadsheetId=spreadsheet_ID,
-                                range=RANGE_NAME).execute()
+                                range=RANGE).execute()
     values_input = result_input.get('values', [])
 
     if not values_input and not values_expansion:

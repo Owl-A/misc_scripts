@@ -4,6 +4,7 @@ import numpy as np
 import itertools as it
 import random
 import warnings
+import pandas as pd
 
 #warnings.filterwarnings('error')
 
@@ -101,6 +102,36 @@ def parse_years(full, selected) :
             return i[0]
     return len(full) 
 
+def count_mentors(mentors) :
+    # A simple DFA which updates a state list
+    state = 0 # initial
+    count = [1]
+    names = []
+    current = None
+    for mentor in mentors :
+        ### STATE 0: initial state
+        #if state == 0 and not mentor :
+        if state == 0 and mentor :
+            current = mentor
+            names += [mentor]
+            count[-1] += 1
+            state = 1 # switch to counter start
+        ### STATE 1: counter initialized and counted 1 occurence
+        elif state == 1 and (mentor == '' or mentor == current) :
+            count[-1] += 1
+        elif state == 1 :
+            current = mentor
+            names += [mentor]
+            count += [1]
+        ### END: termination is implicit, don't need a state 2
+    # heck, didn't need a DFA actually :'), but whatever.
+    return (names, count)
+
+def matching_analysis(matching) :
+    # strip off the unnecessary fields
+    matching = pd.DataFrame(matching[1:])
+    return (count_mentors(list(matching[0])), list(matching[2]))
+
 def mentor_analysis(mentors_data) :
     # strip off the unnecessary fields
     mentors, mentors_year = mentors_data
@@ -181,7 +212,7 @@ def eval_cost(x) :
     # lower the chances of getting that mentor.
     # More focussed the mentor on particular topics, the
     # lesser the chance of getting the mentor.
-    pro_cost  = np.exp(pro* (0.5/count_bits(tor_int)))
+    pro_cost  = np.exp((1/pro)* (0.5/count_bits(tor_int)))
 
     # Chances of matching a mentor in lower year than you
     # should be negligible
